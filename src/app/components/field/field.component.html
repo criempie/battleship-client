@@ -1,0 +1,15 @@
+<!-- <ng-container *ngFor="let _ of [].constructor(size); let y = index">
+  <field-cell
+    *ngFor="let _ of [].constructor(size); let x = index"
+    [x]="x"
+    [y]="y"
+  ></field-cell>
+</ng-container> -->
+<ng-container *ngFor="let row of cells">
+  <field-cell
+    *ngFor="let cell of row"
+    [x]="cell.x"
+    [y]="cell.y"
+    [state]="cell.state"
+  ></field-cell>
+</ng-container>

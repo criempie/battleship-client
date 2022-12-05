@@ -1,0 +1,22 @@
+:host {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border: 1px solid black;
+}
+
+:host(.cell_clear) {
+  background-color: lightskyblue;
+}
+
+:host(.cell_hit) {
+  background-color: lightcoral;
+}
+
+:host(.cell_miss) {
+  background-color: darkslategrey;
+}
+
+:host(.cell_ship) {
+  background-color: #444;
+}
