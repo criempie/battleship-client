@@ -5,11 +5,11 @@
     [y]="y"
   ></field-cell>
 </ng-container> -->
-<ng-container *ngFor="let row of cells">
+<ng-container *ngFor="let row of cells; let x = index">
   <field-cell
-    *ngFor="let cell of row"
-    [x]="cell.x"
-    [y]="cell.y"
+    *ngFor="let cell of row; let y = index"
+    [x]="x"
+    [y]="y"
     [state]="cell.state"
   ></field-cell>
 </ng-container>

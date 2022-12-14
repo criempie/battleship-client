@@ -1,0 +1,8 @@
+<div class="fields-container">
+  <lobby-play-field [cells]="lobbyPlayService.playerCells"></lobby-play-field>
+
+  <lobby-play-field
+    (fire)="lobbyPlayService.fire($event)"
+    [cells]="lobbyPlayService.opponentCells"
+  ></lobby-play-field>
+</div>

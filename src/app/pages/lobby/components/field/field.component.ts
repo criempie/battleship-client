@@ -1,14 +1,27 @@
-import { Component, HostBinding, HostListener } from '@angular/core';
-import { Cell } from 'src/app/components/cell/cell.component';
+import {
+  Component,
+  Input,
+  Output,
+  HostBinding,
+  HostListener,
+  EventEmitter,
+} from '@angular/core';
+import { Cell, CellState, Coordinates } from '@battleship/common';
+import { LobbyPlayService } from '../../services/lobby-play.service';
 
 @Component({
-  selector: 'app-field',
+  selector: 'lobby-play-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.css'],
 })
 export class FieldComponent {
   public readonly size = 10;
-  public cells: Cell[][];
+
+  @Input()
+  public cells: Cell[][] = [];
+
+  @Output()
+  public fire = new EventEmitter<Coordinates>();
 
   @HostBinding('style.grid-template-columns')
   private _gridTemplateColumns = `repeat(${this.size}, 1fr)`;
@@ -24,17 +37,9 @@ export class FieldComponent {
     }
   }
 
-  constructor() {
-    this.cells = Array(this.size)
-      .fill(null)
-      .map((_, x) =>
-        Array(this.size)
-          .fill(null)
-          .map((_, y) => ({ x, y, state: 'clear' }))
-      );
-  }
+  constructor() {}
 
   private _hitCell(x: number, y: number) {
-    this.cells[x][y].state = 'hit';
+    this.fire.emit({ x, y });
   }
 }

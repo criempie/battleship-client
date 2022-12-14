@@ -4,14 +4,7 @@ import {
   HostBinding,
   Input,
 } from '@angular/core';
-
-export type CellStates = 'clear' | 'hit' | 'miss' | 'ship';
-
-export interface Cell {
-  x: number;
-  y: number;
-  state: CellStates;
-}
+import { CellState, Cell } from '@battleship/common';
 
 @Component({
   selector: 'field-cell',
@@ -19,7 +12,7 @@ export interface Cell {
   styleUrls: ['./cell.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CellComponent {
+export class CellComponent extends Cell {
   @HostBinding('attr.data-x')
   @Input()
   public x!: number;
@@ -29,23 +22,25 @@ export class CellComponent {
   public y!: number;
 
   @Input()
-  public state: CellStates = 'clear';
+  public override state = super.state;
 
-  constructor() {}
+  constructor() {
+    super();
+  }
 
   @HostBinding(`class.cell_clear`) private get _isClearState() {
-    return this.state === 'clear';
+    return this.state === CellState.clear;
   }
 
   @HostBinding(`class.cell_hit`) private get _isHitState() {
-    return this.state === 'hit';
+    return this.state === CellState.hit;
   }
 
   @HostBinding(`class.cell_miss`) private get _isMissState() {
-    return this.state === 'miss';
+    return this.state === CellState.miss;
   }
 
   @HostBinding(`class.cell_ship`) private get _isShipState() {
-    return this.state === 'ship';
+    return this.state === CellState.ship;
   }
 }
