@@ -5,22 +5,31 @@ import {
   CellState,
   Coordinates,
   FireData,
+  JoinLobbyData,
+  JoinLobbyReturn,
   ServerEventGameLog,
   SocketFireAnswer,
   socketSettings,
 } from '@battleship/common';
+import { Player } from '../classes/Player';
+import { Injectable } from '@angular/core';
+import { CookieService } from 'ngx-cookie-service';
 
 export class LobbyPlayService {
   public readonly lobbyId?: number;
 
   private _socket: Socket;
+  private _player?: Player;
   private _playerCells: Cell[][];
   private _opponentCells: Cell[][];
   private _isMyTurn = true;
 
   private static _fieldSize = 10;
 
-  constructor(private id: string | null) {
+  constructor(
+    private id: string | null,
+    private _cookieService: CookieService
+  ) {
     if (id) this.lobbyId = +id;
     else {
     }
@@ -41,10 +50,24 @@ export class LobbyPlayService {
     this._socket.on('message', (m) => console.info('message from socket: ', m));
     this._socket.on('gameLog', this._gameLogEventHandler.bind(this));
 
+    const joinLobbyData: JoinLobbyData = {
+      id: this.lobbyId!,
+    };
+
+    if (
+      this._cookieService.check('playerId') &&
+      this._cookieService.check('socketId')
+    ) {
+      joinLobbyData['player'] = {
+        id: +this._cookieService.get('playerId'),
+        socketId: this._cookieService.get('socketId'),
+      };
+    }
+
     this._socket.emit(
       'joinLobby',
-      JSON.stringify({ id: this.lobbyId }),
-      (v: number) => console.log('connected to lobby', v)
+      joinLobbyData,
+      this._joinLobbySocketCallback.bind(this)
     );
   }
 
@@ -65,6 +88,15 @@ export class LobbyPlayService {
     );
   }
 
+  private _joinLobbySocketCallback({ player, lobbyId }: JoinLobbyReturn) {
+    this._player = new Player(player.id, player.socketId);
+
+    this._cookieService.set('playerId', this._player.id.toString());
+    this._cookieService.set('socketId', this._player.socketId);
+
+    console.info(`joined to lobby ${lobbyId} as player ${player.id}`);
+  }
+
   private _fireSocketCallback(data: SocketFireAnswer) {
     // if (data.success) {
     //   this._isMyTurn = data.isYourTurn;
@@ -73,10 +105,10 @@ export class LobbyPlayService {
   }
 
   private _gameLogEventHandler(data: ServerEventGameLog) {
-    console.log(data);
+    if (!this._player) return;
 
     const cells =
-      data.toSocketId === this._socket.id
+      data.toPlayer === this._player.id
         ? this._playerCells
         : this._opponentCells;
 
