@@ -3,26 +3,28 @@ import { enviroment } from 'src/envitoment/enviroment';
 import {
   Cell,
   CellState,
+  ClientFireData,
+  ClientJoinLobbyData,
   Coordinates,
   FireData,
   JoinLobbyData,
   JoinLobbyReturn,
   ServerEventGameLog,
+  ServerFireData,
+  serverLobbyEvents,
   SocketFireAnswer,
   socketSettings,
 } from '@battleship/common';
 import { Player } from '../classes/Player';
-import { Injectable } from '@angular/core';
 import { CookieService } from 'ngx-cookie-service';
 
 export class LobbyPlayService {
-  public readonly lobbyId?: number;
+  public readonly lobbyId?: string;
 
   private _socket: Socket;
   private _player?: Player;
   private _playerCells: Cell[][];
   private _opponentCells: Cell[][];
-  private _isMyTurn = true;
 
   private static _fieldSize = 10;
 
@@ -30,9 +32,7 @@ export class LobbyPlayService {
     private id: string | null,
     private _cookieService: CookieService
   ) {
-    if (id) this.lobbyId = +id;
-    else {
-    }
+    if (id) this.lobbyId = id;
 
     this._playerCells = LobbyPlayService.generateClearFieldOfCells(
       LobbyPlayService._fieldSize
@@ -59,13 +59,13 @@ export class LobbyPlayService {
       this._cookieService.check('socketId')
     ) {
       joinLobbyData['player'] = {
-        id: +this._cookieService.get('playerId'),
+        id: this._cookieService.get('playerId'),
         socketId: this._cookieService.get('socketId'),
       };
     }
 
     this._socket.emit(
-      'joinLobby',
+      serverLobbyEvents.joinLobby,
       joinLobbyData,
       this._joinLobbySocketCallback.bind(this)
     );
@@ -80,28 +80,54 @@ export class LobbyPlayService {
   }
 
   public fire(coords: Coordinates) {
-    const data: FireData = { coords, lobbyId: this.lobbyId! };
+    const data: ServerFireData = { coords, lobbyId: this.lobbyId! };
     this._socket.emit(
-      'fire',
-      JSON.stringify(data),
+      serverLobbyEvents.fire,
+      data,
       this._fireSocketCallback.bind(this)
     );
   }
 
-  private _joinLobbySocketCallback({ player, lobbyId }: JoinLobbyReturn) {
-    this._player = new Player(player.id, player.socketId);
+  private _joinLobbySocketCallback(
+    data: ClientJoinLobbyData | { success: false; reason?: string }
+  ) {
+    if ('success' in data && data.success === false) {
+      console.error(data.reason);
+      return;
+    }
 
-    this._cookieService.set('playerId', this._player.id.toString());
-    this._cookieService.set('socketId', this._player.socketId);
+    data = data as ClientJoinLobbyData;
 
-    console.info(`joined to lobby ${lobbyId} as player ${player.id}`);
+    this._player = new Player(data.player.id, data.player.socketId);
+
+    this._cookieService.set('playerId', this._player.id.toString(), {
+      path: `/lobby/${data.id}`,
+    });
+    this._cookieService.set('socketId', this._player.socketId, {
+      path: `/lobby/${data.id}`,
+    });
+
+    if ('fields' in data) {
+      data.fields!.forEach((field) => {
+        if (field.owner === this._player?.id) {
+          this._playerCells = LobbyPlayService.formatFieldFromSocket(
+            field.field
+          );
+        } else {
+          this._opponentCells = LobbyPlayService.formatFieldFromSocket(
+            field.field
+          );
+        }
+      });
+    }
+
+    console.info(`joined to lobby ${data.id} as player ${data.player.id}`);
   }
 
-  private _fireSocketCallback(data: SocketFireAnswer) {
-    // if (data.success) {
-    //   this._isMyTurn = data.isYourTurn;
-    //   this._opponentCells[data.target.x][data.target.y].state = data.state;
-    // }
+  private _fireSocketCallback(data: ClientFireData) {
+    if (!data.success) {
+      console.error(data.reason);
+    }
   }
 
   private _gameLogEventHandler(data: ServerEventGameLog) {
@@ -123,5 +149,9 @@ export class LobbyPlayService {
           .fill(null)
           .map((_, y) => new Cell())
       );
+  }
+
+  public static formatFieldFromSocket(field: CellState[][]) {
+    return field.map((row) => row.map((cellState) => new Cell(cellState)));
   }
 }
