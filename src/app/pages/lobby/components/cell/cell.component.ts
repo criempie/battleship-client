@@ -3,6 +3,7 @@ import {
   Component,
   HostBinding,
   Input,
+  OnInit,
 } from '@angular/core';
 import { CellState, Cell } from '@battleship/common';
 
@@ -12,7 +13,7 @@ import { CellState, Cell } from '@battleship/common';
   styleUrls: ['./cell.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CellComponent extends Cell {
+export class CellComponent {
   @HostBinding('attr.data-x')
   @Input()
   public x!: number;
@@ -22,11 +23,9 @@ export class CellComponent extends Cell {
   public y!: number;
 
   @Input()
-  public override state = super.state;
+  public state: CellState = CellState.clear;
 
-  constructor() {
-    super();
-  }
+  constructor() {}
 
   @HostBinding(`class.cell_clear`) private get _isClearState() {
     return this.state === CellState.clear;
