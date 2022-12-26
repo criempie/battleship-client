@@ -74,11 +74,16 @@ export class LobbyPlayService {
   }
 
   public get playerCells() {
-    return this._player?.field.cells ?? [];
+    return (
+      this._player?.field.cells ?? new Field(LobbyPlayService._fieldSize).cells
+    );
   }
 
   public get opponentCells() {
-    return this._opponent?.field.cells ?? [];
+    return (
+      this._opponent?.field.cells ??
+      new Field(LobbyPlayService._fieldSize).cells
+    );
   }
 
   public fire(coords: Coordinates) {
@@ -103,7 +108,7 @@ export class LobbyPlayService {
     this._player = new Player(
       data.player.id,
       data.player.socketId,
-      new Field(data.player.field)
+      new Field(LobbyPlayService._fieldSize, data.player.field)
     );
 
     this._cookieService.set('playerId', this._player.id.toString(), {
@@ -116,7 +121,7 @@ export class LobbyPlayService {
     if (data.otherPlayers.length > 0) {
       this._opponent = new Opponent(
         data.otherPlayers[0].id,
-        new Field(data.otherPlayers[0].field)
+        new Field(LobbyPlayService._fieldSize, data.otherPlayers[0].field)
       );
     }
 
@@ -140,8 +145,6 @@ export class LobbyPlayService {
   }
 
   private _lobbyLogEventHandler(data: ServerLobbyLogData) {
-    console.log(data);
-
     if (data.type === LobbyLogTypes.playerJoin && !this._opponent) {
       this._opponent = new Opponent(
         data.playerId,
